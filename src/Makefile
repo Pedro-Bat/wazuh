@@ -133,6 +133,7 @@ endif
 
 ifeq (${uname_S},Darwin)
 SYSINFO_OS=-DCMAKE_SYSTEM_NAME=Darwin
+EXECUTABLE_FILES:=$(shell find . -maxdepth 1 -type f -perm +111 -exec /bin/sh -c "file {} | grep 'executable' > /dev/null" \; -print)
 endif
 
 ifneq (,$(filter ${TEST},YES yes y Y 1))
@@ -367,6 +368,7 @@ ifeq (,$(filter ${DEBUG},YES yes y Y 1))
 	OFLAGS+=-O2
 	AR_LDFLAGS+=-s
 endif
+
 
 OSSEC_CFLAGS+=${OFLAGS}
 OSSEC_LDFLAGS+=${OFLAGS}
@@ -834,6 +836,10 @@ endif
 agent: external ${CPPLIBDEPS}
 	${MAKE} ${BUILD_CMAKE_PROJECTS}
 	${MAKE} ${BUILD_AGENT}
+
+ifeq (${uname_S}, Darwin)
+	@$(foreach var, ${EXECUTABLE_FILES}, dsymutil -o symbols/$(var).dSYM $(var) 2>/dev/null && strip -S $(var);)
+endif
 
 ifneq (,$(filter ${USE_SELINUX},YES yes y Y 1))
 server local hybrid agent: selinux
